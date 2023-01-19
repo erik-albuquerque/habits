@@ -47,8 +47,7 @@ export async function appRoutes(app: FastifyInstance) {
 
     const { date } = getDayParams.parse(request.query);
 
-    const parsedDate = dayjs(date);
-
+    const parsedDate = dayjs(date).startOf("day");
     const weekDay = parsedDate.get("day");
 
     try {
@@ -65,7 +64,7 @@ export async function appRoutes(app: FastifyInstance) {
         },
       });
 
-      const day = await prisma.day.findUnique({
+      const day = await prisma.day.findFirst({
         where: {
           date: parsedDate.toDate(),
         },
@@ -85,6 +84,64 @@ export async function appRoutes(app: FastifyInstance) {
       response.status(400).send({ error: "Error on get day info!" });
 
       throw new Error("Error on get day info!");
+    }
+  });
+
+  app.patch("/habits/:id/toggle", async (request, response) => {
+    const toggleHabitParams = z.object({
+      id: z.string().uuid(),
+    });
+
+    const { id } = toggleHabitParams.parse(request.params);
+
+    const today = dayjs().startOf("day").toDate();
+
+    try {
+      let day = await prisma.day.findUnique({
+        where: {
+          date: today,
+        },
+      });
+
+      if (!day) {
+        day = await prisma.day.create({
+          data: {
+            date: today,
+          },
+        });
+      }
+
+      const dayHabit = await prisma.dayHabit.findUnique({
+        where: {
+          day_id_habit_id: {
+            day_id: day.id,
+            habit_id: id,
+          },
+        },
+      });
+
+      if (dayHabit) {
+        await prisma.dayHabit.delete({
+          where: {
+            id: dayHabit.id,
+          },
+        });
+      } else {
+        await prisma.dayHabit.create({
+          data: {
+            day_id: day.id,
+            habit_id: id,
+          },
+        });
+      }
+
+      response.status(204).send();
+    } catch (error) {
+      console.error(error);
+
+      response.status(400).send({ error: "Error on complete day!" });
+
+      throw new Error("Error on complete day!");
     }
   });
 }
