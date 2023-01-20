@@ -1,5 +1,6 @@
 import { Check } from "phosphor-react";
 import { ChangeEvent, FormEvent, useState } from "react";
+import { api } from "../lib/axios";
 import { Checkbox } from "./Checkbox";
 
 const availableWeekDays = [
@@ -16,8 +17,22 @@ export function NewHabitForm() {
   const [title, setTitle] = useState("");
   const [weekDays, setWeekDays] = useState<number[]>([]);
 
-  function handleCreateNewHabit(event: FormEvent) {
+  async function handleCreateNewHabit(event: FormEvent) {
     event.preventDefault();
+
+    if (!title || weekDays.length === 0) {
+      return;
+    }
+
+    await api.post("habits", {
+      title,
+      weekDays,
+    });
+
+    setTitle("");
+    setWeekDays([]);
+
+    alert("Hábito criado com sucesso!");
   }
 
   function handleTitleChange(event: ChangeEvent<HTMLInputElement>) {
@@ -62,6 +77,7 @@ export function NewHabitForm() {
             <Checkbox
               key={weekDay}
               title={weekDay}
+              checked={weekDays.includes(index)}
               onCheckedChange={() => handleToggleWeekDay(index)}
             />
           );
