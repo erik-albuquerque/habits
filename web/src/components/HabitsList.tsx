@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 import { useEffect, useState } from "react";
 import { api } from "../lib/axios";
 import { Checkbox } from "./Checkbox";
@@ -30,6 +31,8 @@ export function HabitsList({ date }: HabitsList) {
       });
   }, []);
 
+  const isDateInPast = dayjs(date).endOf("day").isBefore(new Date());
+
   return (
     <div className="mt-6 flex flex-col gap-3">
       {habitsInfo?.possibleHabits.map((habit) => {
@@ -38,6 +41,7 @@ export function HabitsList({ date }: HabitsList) {
             key={habit.id}
             title={habit.title}
             checked={habitsInfo.completedHabits.includes(habit.id)}
+            disabled={isDateInPast}
             className="font-semibold text-xl group-data-[state=checked]:line-through group-data-[state=checked]:text-zinc-400"
           />
         );
