@@ -1,27 +1,28 @@
-import { ScrollView, View, Text, Alert } from "react-native";
-import { BackButton } from "../components/BackButton";
-import { useRoute } from "@react-navigation/native";
-import dayjs from "dayjs";
-import { ProgressBar } from "../components/ProgressBar";
-import { CheckBox } from "../components/CheckBox";
 import { useEffect, useState } from "react";
-import { Loading } from "../components/Loading";
+import { useRoute } from "@react-navigation/native";
+import { Alert, ScrollView, Text, View } from "react-native";
+import dayjs from "dayjs";
+import clsx from "clsx";
+
 import { api } from "../lib/axios";
 import { generateProgressPercentage } from "../utils/generate-progress-percentage";
+
+import { BackButton } from "../components/BackButton";
+import { ProgressBar } from "../components/ProgressBar";
+import { CheckBox } from "../components/CheckBox";
+import { Loading } from "../components/Loading";
 import { HabitsEmpty } from "../components/HabitsEmpty";
-import clsx from "clsx";
 
 interface Params {
   date: string;
 }
 
 interface DayInfoProps {
+  completedHabits: string[];
   possibleHabits: {
     id: string;
     title: string;
-    date: Date;
   }[];
-  completedHabits: string[];
 }
 
 export function Habit() {
@@ -37,7 +38,7 @@ export function Habit() {
   const dayOfWeek = parsedDate.format("dddd");
   const dayAndMonth = parsedDate.format("DD/MM");
 
-  const habitsProgress = dayInfo?.possibleHabits.length
+  const habitsProgress = dayInfo?.possibleHabits?.length
     ? generateProgressPercentage(
         dayInfo.possibleHabits.length,
         completedHabits.length
@@ -48,15 +49,14 @@ export function Habit() {
     try {
       setLoading(true);
 
-      const response = await api.get("day", { params: { date } });
-
+      const response = await api.get("/day", { params: { date } });
       setDayInfo(response.data);
-      setCompletedHabits(response.data.completedHabits);
+      setCompletedHabits(response.data.completedHabits ?? []);
     } catch (error) {
       console.log(error);
       Alert.alert(
-        "Ops!",
-        "Não foi possível carregar as informações dos hábitos!"
+        "Ops",
+        "Não foi possível carregar as informações dos hábitos."
       );
     } finally {
       setLoading(false);
@@ -64,12 +64,19 @@ export function Habit() {
   }
 
   async function handleToggleHabits(habitId: string) {
-    if (completedHabits.includes(habitId)) {
-      setCompletedHabits((prevState) =>
-        prevState.filter((habit) => habit !== habitId)
-      );
-    } else {
-      setCompletedHabits((prevState) => [...prevState, habitId]);
+    try {
+      await api.patch(`/habits/${habitId}/toggle`);
+
+      if (completedHabits?.includes(habitId)) {
+        setCompletedHabits((prevState) =>
+          prevState.filter((habit) => habit !== habitId)
+        );
+      } else {
+        setCompletedHabits((prevState) => [...prevState, habitId]);
+      }
+    } catch (error) {
+      console.log(error);
+      Alert.alert("Ops", "Não foi possível atualizar o status do hábito.");
     }
   }
 
@@ -93,7 +100,7 @@ export function Habit() {
           {dayOfWeek}
         </Text>
 
-        <Text className="text-white font-extrabold text-3xl mt-2">
+        <Text className="text-white font-extrabold text-3xl">
           {dayAndMonth}
         </Text>
 
