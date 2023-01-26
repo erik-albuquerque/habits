@@ -19,7 +19,7 @@ export function Checkbox(props: CheckboxProps) {
           <Check size={20} className="text-white" />
         </RadixCheckbox.Indicator>
 
-        {props.disabled && (
+        {!props.checked && props.disabled && (
           <svg
             stroke="currentColor"
             fill="currentColor"
